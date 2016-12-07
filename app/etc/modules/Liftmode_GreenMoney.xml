@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+/**
+ *
+ * @category   Mage
+ * @package    Liftmode_GreenMoney
+ * @copyright  Copyright (c)  LiftMode (Synaptent LLC).
+ */
+-->
+<config>
+    <modules>
+        <Liftmode_GreenMoney>
+            <active>true</active>
+            <codePool>local</codePool>
+            <depends>
+                <Mage_Payment/>
+                <Mage_Checkout/>
+            </depends>
+        </Liftmode_GreenMoney>
+    </modules>
+</config>

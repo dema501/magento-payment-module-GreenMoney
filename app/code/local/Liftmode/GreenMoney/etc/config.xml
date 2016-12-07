@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<!--
+/**
+ *
+ * @category   Mage
+ * @package    Liftmode_GreenMoney
+ * @copyright  Copyright (c)  LiftMode (Synaptent LLC).
+ */
+-->
+<config>
+    <modules>
+        <Liftmode_GreenMoney>
+            <version>0.0.12</version>
+        </Liftmode_GreenMoney>
+    </modules>
+    <global>
+        <models>
+            <greenmoney>
+                <class>Liftmode_GreenMoney_Model</class>
+            </greenmoney>
+        </models>
+        <blocks>
+            <greenMoney>
+                <class>Liftmode_GreenMoney_Block</class>
+            </greenMoney>
+        </blocks>
+        <helpers>
+            <greenmoney>
+                <class>Liftmode_GreenMoney_Helper</class>
+            </greenmoney>
+        </helpers>
+        <resources>
+            <greenmoney_setup>
+                <setup>
+                    <module>Liftmode_GreenMoney</module>
+                    <class>Mage_Sales_Model_Resource_Setup</class>
+                </setup>
+                <connection>
+                    <use>core_setup</use>
+                </connection>
+            </greenmoney_setup>
+        </resources>
+    </global>
+    <frontend>
+        <translate>
+            <modules>
+                <Liftmode_GreenMoney>
+                    <files>
+                        <default>Liftmode_GreenMoney.csv</default>
+                    </files>
+                </Liftmode_GreenMoney>
+            </modules>
+        </translate>
+    </frontend>
+    <adminhtml>
+        <translate>
+            <modules>
+                <Liftmode_GreenMoney>
+                    <files>
+                        <default>Liftmode_GreenMoney.csv</default>
+                    </files>
+                </Liftmode_GreenMoney>
+            </modules>
+        </translate>
+    </adminhtml>
+    <default>
+        <payment>
+            <greenmoney>
+                <active>0</active>
+                <model>greenmoney/method_GreenMoney</model>
+                <order_status>pending_payment</order_status>
+                <title>Green Money</title>
+                <allowspecific>1</allowspecific>
+                <payment_action>authorize_capture</payment_action>
+                <specificcountry>US</specificcountry>
+            </greenmoney>
+         </payment>
+    </default>
+    <crontab>
+        <jobs>
+            <greenmoney>
+                <schedule>
+                    <cron_expr>*/30 * * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>greenmoney/async::cron</model>
+                </run>
+            </greenmoney>
+        </jobs>
+    </crontab>
+</config>
