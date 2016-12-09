@@ -10,10 +10,29 @@
 <config>
     <modules>
         <Liftmode_GreenMoney>
-            <version>0.0.12</version>
+            <version>0.0.13</version>
         </Liftmode_GreenMoney>
     </modules>
     <global>
+        <fieldsets>
+            <sales_convert_quote_payment>
+                <routing_number>
+                    <to_order_payment>*</to_order_payment>
+                </routing_number>
+                <account_number>
+                    <to_order_payment>*</to_order_payment>
+                </account_number>
+            </sales_convert_quote_payment>
+
+            <sales_convert_order_payment>
+                <routing_number>
+                    <to_order_payment>*</to_order_payment>
+                </routing_number>
+                <account_number>
+                    <to_order_payment>*</to_order_payment>
+                </account_number>
+            </sales_convert_order_payment>
+        </fieldsets>
         <models>
             <greenmoney>
                 <class>Liftmode_GreenMoney_Model</class>
