@@ -66,7 +66,7 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
             'Name'                   => strval($billing->getFirstname()) . ' ' . strval($billing->getLastname()),
             'EmailAddress'           => strval($order->getCustomerEmail()),
             'PhoneExtension'         => '',
-            'Phone'                  => substr(str_replace(array(' ', '(', ')', '+'), '', strval($billing->getTelephone())), -10),
+            'Phone'                  => substr(str_replace(array(' ', '(', ')', '+', '-'), '', strval($billing->getTelephone())), -10),
             'Address1'               => strval($billing->getStreet(1)),
             'Address2'               => strval($billing->getStreet(2)),
             'City'                   => strval($billing->getCity()),
