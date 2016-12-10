@@ -46,9 +46,7 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
             '_handleCheckResponse'
         );
 
-
-        $payment->setStatus(self::STATUS_APPROVED)
-            ->setTransactionId($results['Check_ID'])
+        $payment->setTransactionId($results['Check_ID'])
             ->setIsTransactionClosed(0);
 
         return $this;
@@ -94,6 +92,29 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
 
 
     /**
+     * Check refund availability
+     *
+     * @return bool
+     */
+    public function canRefund()
+    {
+        return $this->_canRefund;
+    }
+
+
+    /**
+     * Check void availability
+     *
+     * @param   Varien_Object $invoicePayment
+     * @return  bool
+     */
+    public function canVoid(Varien_Object $payment)
+    {
+        return $this->_canVoid;
+    }
+
+
+    /**
      * Capture payment abstract method
      *
      * @param Varien_Object $payment
@@ -115,8 +136,7 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
             '_handleCheckResponse'
         );
 
-        $payment->setStatus(self::STATUS_APPROVED)
-            ->setTransactionId($results['Check_ID'])
+        $payment->setTransactionId($results['Check_ID'])
             ->setIsTransactionClosed(0);
 
         return $this;
@@ -147,22 +167,23 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
     {
         $orderTransactionId = $this->_getParentTransactionId($payment);
 
-
-        if ($orderTransactionId) {
-            $results = $this->_callSoapFunc(
-                'WooCheckCancel',
-                array (
-                    'Client_ID'              => Mage::helper('core')->decrypt($this->getConfigData('login')),
-                    'ApiPassword'            => Mage::helper('core')->decrypt($this->getConfigData('trans_key')),
-                    'Check_ID'               => $orderTransactionId,
-                ),
-                '_handleCancelResponse'
-            );
-
-            $payment->setStatus(self::STATUS_DECLINED)
-                    ->setTransactionId($orderTransactionId)
-                    ->setIsTransactionClosed(1);
+        if (!$orderTransactionId) {
+            Mage::throwException(Mage::helper('paygate')->__('Invalid transaction ID.'));
         }
+
+        $results = $this->_callSoapFunc(
+            'WooCheckCancel',
+            array (
+                'Client_ID'              => Mage::helper('core')->decrypt($this->getConfigData('login')),
+                'ApiPassword'            => Mage::helper('core')->decrypt($this->getConfigData('trans_key')),
+                'Check_ID'               => $orderTransactionId,
+            ),
+            '_handleCancelResponse'
+        );
+
+        $payment->setStatus(self::STATUS_DECLINED)
+                ->setShouldCloseParentTransaction(1)
+                ->setIsTransactionClosed(1);
 
         return $this;
     }
@@ -189,27 +210,30 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
      */
     public function refund(Varien_Object $payment, $amount)
     {
+        if ($amount <= 0) {
+            Mage::throwException(Mage::helper('paygate')->__('Invalid amount for refund.'));
+        }
 
         $orderTransactionId = $this->_getParentTransactionId($payment);
 
-
-        if ($orderTransactionId) {
-            $results = $this->_callSoapFunc(
-                'WooCheckRefund',
-                array (
-                    'Client_ID'              => Mage::helper('core')->decrypt($this->getConfigData('login')),
-                    'ApiPassword'            => Mage::helper('core')->decrypt($this->getConfigData('trans_key')),
-                    'Check_ID'               => $orderTransactionId,
-                    'RefundMemo'             => 'Refund for Order ' . $payment->getOrder()->getIncrementId() . ' at ' . Mage::app()->getStore()->getFrontendName() . '. Thank you.',
-                    'RefundAmount'           => $amount,
-                ),
-                '_handleRefundResponse'
-            );
-
-            $payment->setStatus(self::STATUS_DECLINED)
-                    ->setTransactionId($orderTransactionId)
-                    ->setIsTransactionClosed(1);
+        if (!$orderTransactionId) {
+            Mage::throwException(Mage::helper('paygate')->__('Invalid transaction ID.'));
         }
+
+
+        $results = $this->_callSoapFunc(
+            'WooCheckRefund',
+            array (
+                'Client_ID'              => Mage::helper('core')->decrypt($this->getConfigData('login')),
+                'ApiPassword'            => Mage::helper('core')->decrypt($this->getConfigData('trans_key')),
+                'Check_ID'               => $orderTransactionId,
+                'RefundMemo'             => 'Refund for Order ' . $payment->getOrder()->getIncrementId() . ' at ' . Mage::app()->getStore()->getFrontendName() . '. Thank you.',
+                'RefundAmount'           => $amount,
+            ),
+            '_handleRefundResponse'
+        );
+
+        $payment->setIsTransactionClosed(1);
 
         return $this;
     }
