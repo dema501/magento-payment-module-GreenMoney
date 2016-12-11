@@ -48,7 +48,7 @@ class Liftmode_GreenMoney_Model_Async extends Mage_Core_Model_Abstract
                 ->getCollection()
                 ->join(array('order'=>'sales/order'), 'main_table.parent_id=order.entity_id', 'state')
                 ->addFieldToFilter('method', 'greenmoney')
-                ->addFieldToFilter('state', Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
+//                ->addFieldToFilter('state', Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
                 ->addFieldToFilter('status', Mage_Index_Model_Process::STATUS_PENDING)
             ;
 
