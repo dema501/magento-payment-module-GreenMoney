@@ -362,6 +362,8 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
             $result['status'] = 'Deleted';
         } elseif ('True' === (string) $resp->Rejected) {
             $result['status'] = 'Rejected';
+        } elseif ('True' === (string) $resp->Processed) {
+            $result['status'] = 'Processed';
         }
 
         return $result;
