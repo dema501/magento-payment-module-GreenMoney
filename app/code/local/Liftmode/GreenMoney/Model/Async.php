@@ -3,38 +3,52 @@
  *
  * @category   Mage
  * @package    Liftmode_GreenMoney
- * @copyright  Copyright (c)  LiftMode (Synaptent LLC).
+ * @copyright  Copyright (c)  Dmitry Bashlov, contributors.
  */
 
 class Liftmode_GreenMoney_Model_Async extends Mage_Core_Model_Abstract
 {
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->_model = Mage::getModel('greenmoney/method_greenMoney');
+    }
+
+
     /**
      * Poll Amazon API to receive order status and update Magento order.
      */
     public function syncOrderStatus(Mage_Sales_Model_Order $order, $isManualSync = false)
     {
         try {
-            $greenMoney = Mage::getModel('greenmoney/method_greenMoney');
+            $orderTransactionId = $this->_model->_getParentTransactionId($order->getPayment());
 
-            $orderTransactionId = $greenMoney->_getParentTransactionId($order->getPayment());
             if ($orderTransactionId) {
-                $data = $greenMoney->_doGetStatus($orderTransactionId);
+                $data = $this->_model->_doGetStatus($orderTransactionId);
 
-                Mage::log(array('syncOrderStatus------>>>', $order->getIncrementId(), $orderTransactionId, $data), null, 'GreenMoney.log');
+                $this->_model->log(array('syncOrderStatus------>>>', $order->getIncrementId(), $orderTransactionId, $data));
 
-                if ($data['status'] == 'Received') {
+                if (isset($data['found']) && (int) $data['found'] === 0 && isset($data['verifystatus']) && (int) $data['verifystatus'] === 0) {
                     $this->putOrderOnProcessing($order);
-
-                    Mage::getSingleton('adminhtml/session')->addSuccess('Payment has been sent for orderId: ' . $order->getIncrementId());
+                    return;
+                } elseif (isset($data['found']) && (int) $data['found'] === 0 && isset($data['verifystatus']) && (int) $data['verifystatus'] === 3) {
+                    $this->putOrderOnHold($order, $data['verifydescr']);
                 } elseif (in_array($data['status'], array('Deleted', 'Rejected'))) {
-                    $this->putOrderOnHold($order);
+                    $this->putOrderOnHold($order, $data['verifydescr']);
+                }
+
+                if (Mage::getStoreConfig('slack/general/enable_notification')) {
+                    $notificationModel   = Mage::getSingleton('mhauri_slack/notification');
+                    $notificationModel->setMessage(
+                        Mage::helper($this->_model->_code)->__("*GreenMoney veryfication payment failed with data:*\nGreenMoney response ```%s```\n\nTransaction Data: ```%s```\n\nOrderId ```%s```", json_encode($data), json_encode($orderTransactionId), $order->getIncrementId())
+                    )->send(array('icon_emoji' => ':cop::skin-tone-4:'));
                 }
             } else {
                 $this->putOrderOnHold($order, 'No transaction found, you should manually make invoice');
             }
         } catch (Exception $e) {
             Mage::logException($e);
-            Mage::getSingleton('adminhtml/session')->addError($e->getMessage());
         }
     }
 
@@ -47,7 +61,7 @@ class Liftmode_GreenMoney_Model_Async extends Mage_Core_Model_Abstract
             $orderCollection = Mage::getModel('sales/order_payment')
                 ->getCollection()
                 ->join(array('order'=>'sales/order'), 'main_table.parent_id=order.entity_id', 'state')
-                ->addFieldToFilter('method', 'greenmoney')
+                ->addFieldToFilter('method', $this->_model->_code)
                 ->addFieldToFilter('state',  array('in' => array(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, Mage_Sales_Model_Order::STATE_PROCESSING)))
                 ->addFieldToFilter('status', Mage_Index_Model_Process::STATUS_PENDING)
             ;
@@ -62,7 +76,7 @@ class Liftmode_GreenMoney_Model_Async extends Mage_Core_Model_Abstract
 
     public function putOrderOnProcessing(Mage_Sales_Model_Order $order)
     {
-        Mage::log(array('putOrderOnProcessing------>>>', $order->getIncrementId(), $order->canShip()), null, 'GreenMoney.log');
+        $this->_model->log(array('putOrderOnProcessing------>>>', $order->getIncrementId(), $order->canShip()));
 
         // Change order to "On Process"
         if ($order->canShip()) {
@@ -77,17 +91,15 @@ class Liftmode_GreenMoney_Model_Async extends Mage_Core_Model_Abstract
 
                 $order->addStatusToHistory($order->getStatus(), 'We recieved your payment, thank you!', true);
                 $order->save();
-
-                Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('greenmoney')->__('We recieved your payment for order id: %s. Order was paid by GreenMoney', $order->getIncrementId()));
             } catch (Exception $e) {
-                Mage::log(array('putOrderOnProcessing---->>>>', $e->getMessage()), null, 'GreenMoney.log');
+                $this->_model->log(array('putOrderOnProcessing---->>>>', $e->getMessage()));
             }
         }
     }
 
     public function putOrderOnHold(Mage_Sales_Model_Order $order, $reason)
     {
-        Mage::log(array('putOrderOnHold------>>>', $order->getIncrementId()), null, 'GreenMoney.log');
+        $this->_model->log(array('putOrderOnHold------>>>', $order->getIncrementId()));
 
         // Change order to "On Hold"
         try {
@@ -95,7 +107,7 @@ class Liftmode_GreenMoney_Model_Async extends Mage_Core_Model_Abstract
             $order->addStatusToHistory($order->getStatus(), $reason, false);
             $order->save();
         } catch (Exception $e) {
-            Mage::log(array('putOrderOnProcessing---->>>>', $e->getMessage()), null, 'GreenMoney.log');
+            $this->_model->log(array('putOrderOnProcessing---->>>>', $e->getMessage()));
         }
     }
 }

@@ -4,7 +4,7 @@
  *
  * @category   Mage
  * @package    Liftmode_GreenMoney
- * @copyright  Copyright (c)  LiftMode (Synaptent LLC).
+ * @copyright  Copyright (c)  Dmitry Bashlov, contributors.
  */
 -->
 <config>
@@ -15,6 +15,7 @@
             <depends>
                 <Mage_Payment/>
                 <Mage_Checkout/>
+                <!-- <Liftmode_SimpleFraudProtection /> -->
             </depends>
         </Liftmode_GreenMoney>
     </modules>

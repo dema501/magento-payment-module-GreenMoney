@@ -3,7 +3,7 @@
  *
  * @category   Mage
  * @package    Liftmode_GreenMoney
- * @copyright  Copyright (c)  LiftMode (Synaptent LLC).
+ * @copyright  Copyright (c)  Dmitry Bashlov, contributors.
  */
 
 class Liftmode_GreenMoney_Block_Info_GreenMoney extends Mage_Payment_Block_Info

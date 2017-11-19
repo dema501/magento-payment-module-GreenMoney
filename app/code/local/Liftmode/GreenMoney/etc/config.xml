@@ -4,13 +4,13 @@
  *
  * @category   Mage
  * @package    Liftmode_GreenMoney
- * @copyright  Copyright (c)  LiftMode (Synaptent LLC).
+ * @copyright  Copyright (c)  Dmitry Bashlov, contributors.
  */
 -->
 <config>
     <modules>
         <Liftmode_GreenMoney>
-            <version>0.0.15</version>
+            <version>0.0.16</version>
         </Liftmode_GreenMoney>
     </modules>
     <global>

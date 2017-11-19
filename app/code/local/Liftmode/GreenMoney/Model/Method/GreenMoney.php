@@ -3,7 +3,7 @@
  *
  * @category   Mage
  * @package    Liftmode_GreenMoney
- * @copyright  Copyright (c)  LiftMode (Synaptent LLC).
+ * @copyright  Copyright (c)  Dmitry Bashlov, contributors.
  */
 
 class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Method_Abstract
@@ -35,7 +35,7 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
     public function authorize(Varien_Object $payment, $amount)
     {
         if ($amount <= 0) {
-            Mage::throwException(Mage::helper('greenmoney')->__('Invalid amount for authorization.'));
+            Mage::throwException(Mage::helper($this->_code)->__('Invalid amount for authorization.'));
         }
 
         $payment->setAmount($amount);
@@ -82,7 +82,7 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
 
     private function _handleCheckResponse($resp)
     {
-        Mage::log(array('handleCheckResponse------>>>', $resp), null, 'GreenMoney.log');
+        $this->log(array('handleCheckResponse------>>>', $resp));
 
         return array (
             'CheckNumber' => $resp->CheckNumber,
@@ -125,7 +125,7 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
     public function capture(Varien_Object $payment, $amount)
     {
         if ($amount <= 0) {
-            Mage::throwException(Mage::helper('greenmoney')->__('Invalid amount for authorization.'));
+            Mage::throwException(Mage::helper($this->_code)->__('Invalid amount for authorization.'));
         }
 
         $payment->setAmount($amount);
@@ -168,7 +168,7 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
         $orderTransactionId = $this->_getParentTransactionId($payment);
 
         if (!$orderTransactionId) {
-            Mage::throwException(Mage::helper('paygate')->__('Invalid transaction ID.'));
+            Mage::throwException(Mage::helper($this->_code)->__('Invalid transaction ID.'));
         }
 
         $results = $this->_callSoapFunc(
@@ -191,7 +191,7 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
 
     private function _handleCancelResponse($resp)
     {
-        Mage::log(array('handleCancelResponse------>>>', $resp), null, 'GreenMoney.log');
+        $this->log(array('handleCancelResponse------>>>', $resp));
 
         return array(
 //            'RefundCheck_ID'    => $resp->RefundCheck_ID,
@@ -211,13 +211,13 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
     public function refund(Varien_Object $payment, $amount)
     {
         if ($amount <= 0) {
-            Mage::throwException(Mage::helper('paygate')->__('Invalid amount for refund.'));
+            Mage::throwException(Mage::helper($this->_code)->__('Invalid amount for refund.'));
         }
 
         $orderTransactionId = $this->_getParentTransactionId($payment);
 
         if (!$orderTransactionId) {
-            Mage::throwException(Mage::helper('paygate')->__('Invalid transaction ID.'));
+            Mage::throwException(Mage::helper($this->_code)->__('Invalid transaction ID.'));
         }
 
 
@@ -241,7 +241,7 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
 
     private function _handleRefundResponse($resp)
     {
-        Mage::log(array('handleRefundResponse------>>>', $resp), null, 'GreenMoney.log');
+        $this->log(array('handleRefundResponse------>>>', $resp));
 
         return array(
             'RefundCheck_ID'    => $resp->RefundCheck_ID,
@@ -321,17 +321,17 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
 
             $resultMethod = $action . 'Result';
 
-            Mage::log(array('callSoapFunc------>>>', $resultMethod, $resp, $data, $client->__getLastRequest()), null, 'GreenMoney.log');
+            $this->log(array('callSoapFunc------>>>', $resultMethod, $resp, $data, $client->__getLastRequest()));
 
             if ($resp->{$resultMethod}->Result) {
-                Mage::throwException(Mage::helper('greenmoney')->__("Error during process payment: response code: %s %s", $resp->{$resultMethod}->Result, $resp->{$resultMethod}->ResultDescription));
+                Mage::throwException(Mage::helper($this->_code)->__("Error during process payment: response code: %s %s", $resp->{$resultMethod}->Result, $resp->{$resultMethod}->ResultDescription));
             } else {
                 $result = call_user_func(array($this, $callBackFn), $resp->{$resultMethod});
             }
          } catch (SoapFault $fault) {
-            Mage::log(array('callSoapFunc------>>>', $fault->faultstring), null, 'GreenMoney.log');
+            $this->log(array('callSoapFuncErr------>>>', $fault->faultstring));
 
-            Mage::throwException(Mage::helper('greenmoney')->__("Error during process payment: response code: %s %s", '', $fault->faultstring));
+            Mage::throwException(Mage::helper($this->_code)->__("Error during process payment: response code: %s %s", '', $fault->faultstring));
          }
 
          return $result;
@@ -352,20 +352,31 @@ class Liftmode_GreenMoney_Model_Method_GreenMoney extends Mage_Payment_Model_Met
     }
 
 
+
+    public function log($data)
+    {
+        Mage::log($data, null, 'GreenMoney.log');
+    }
+
+
     private function _handleStatusResponse($resp)
     {
-        Mage::log(array('handleStatusResponse------>>>', $resp), null, 'GreenMoney.log');
+        $this->log(array('handleStatusResponse------>>>', $resp));
 
-        $result['status'] = 'Received';
+        $res['status'] = 'Received';
+
+        $res['found']         = $resp->Result;
+        $res['verifystatus']  = $resp->VerifyResult;
+        $res['verifydescr']   = $resp->VerifyResultDescription;
 
         if ('True' === (string) $resp->Deleted) {
-            $result['status'] = 'Deleted';
+            $res['status'] = 'Deleted';
         } elseif ('True' === (string) $resp->Rejected) {
-            $result['status'] = 'Rejected';
+            $res['status'] = 'Rejected';
         } elseif ('True' === (string) $resp->Processed) {
-            $result['status'] = 'Processed';
+            $res['status'] = 'Processed';
         }
 
-        return $result;
+        return $res;
     }
 }
